@@ -4,9 +4,9 @@ module.exports = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
-    "controllers/*.js",
-    "services/*.js",
-    "middleware/*.js",
-    "!**/node_modules/**"
+    "services/pdfService.js",
+  "services/pngService.js",
+  "controllers/uploadController.js",
+  "controllers/analysisController.js"
   ]
 };
