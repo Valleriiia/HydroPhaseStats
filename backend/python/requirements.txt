@@ -1,0 +1,6 @@
+numpy
+scipy
+soundfile
+flake8 
+black   
+pytest
