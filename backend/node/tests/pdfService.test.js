@@ -35,6 +35,17 @@ const pdfService = require('../services/pdfService');
 const PDFDocument = require('pdfkit'); // тепер це мок
 
 describe('pdfService.createPDF - мок-тест', () => {
+let consoleErrorSpy;
+
+    beforeEach(() => {
+      // Приховуємо console.error для чистоти виводу тестів
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
   test('викликаються text() для статистики та image() для графіків', async () => {
     const mockGraphs = [{
       name: 'Chart1',

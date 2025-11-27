@@ -5,6 +5,17 @@ const pythonService = require('../services/pythonService');
 jest.mock('../services/pythonService');
 
 describe('analysisController.analyzeSignal', () => {
+  let consoleErrorSpy;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
   test('повертає помилку, якщо немає fileName', async () => {
     const req = { body: {} };
     const res = {
@@ -38,7 +49,8 @@ describe('analysisController.analyzeSignal', () => {
   });
 
   test('обробка помилки від pythonService', async () => {
-    pythonService.runAnalysis.mockRejectedValue(new Error('Проблема Python'));
+    const testError = new Error('Проблема Python');
+    pythonService.runAnalysis.mockRejectedValue(testError);
 
     const req = { body: { fileName: 'test.wav' } };
     const res = {
@@ -50,5 +62,6 @@ describe('analysisController.analyzeSignal', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'Помилка при обробці файлу Python' });
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Помилка аналізу:', testError);
   });
 });

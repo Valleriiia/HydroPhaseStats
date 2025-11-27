@@ -1,7 +1,11 @@
 const multer = require('multer');
 const fileUpload = require('../middleware/fileUpload');
 
-describe('fileUpload middleware', () => {
+describe('fileUpload middleware - базові тести', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('фільтрує неправильний тип файлу', (done) => {
     const req = {};
     const file = { mimetype: 'image/png' };
