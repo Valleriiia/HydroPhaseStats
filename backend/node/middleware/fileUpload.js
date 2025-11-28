@@ -4,7 +4,7 @@ const path = require('path');
 // Налаштування сховища
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../../../data/uploads')); // зберігати в /data/uploads
+    cb(null, path.join(__dirname, '../../data/uploads')); // зберігати в /data/uploads
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -15,7 +15,14 @@ const storage = multer.diskStorage({
 
 // Фільтр файлів (дозволяємо тільки аудіо)
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3'];
+  const allowedTypes = [
+    'audio/wav', 
+    'audio/x-wav', 
+    'audio/wave',
+    'audio/vnd.wave',
+    'audio/mpeg',
+    'audio/mp3'
+  ];
   if (!allowedTypes.includes(file.mimetype)) {
     return cb(new Error('Непідтримуваний формат файлу'), false);
   }

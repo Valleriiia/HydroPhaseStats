@@ -3,7 +3,7 @@ const path = require('path');
 const cors = require('cors');
 
 const uploadRoutes = require('./routes/upload');
-
+const analysisRoutes = require('./routes/analysis');
 const exportRoutes = require('./routes/export');
 
 const app = express();
@@ -15,7 +15,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../data/uploads')));
 
 app.use('/api/upload', uploadRoutes);
-
+app.use('/api/analysis', analysisRoutes);
 app.use('/api/export', exportRoutes);
 
 app.listen(3000, () => {

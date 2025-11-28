@@ -1,149 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title> HydroPhase | Система статистичного аналізу фазового спектру </title>
-  <link rel="icon" type="image/svg+xml" href="./assets/styles/logo.svg" alt="HydroPhase logo">
-  <link rel="stylesheet" href="./assets/styles/style.css">
-  <script type="module" src="./assets/js/script.js"></script>
+	<meta charset="UTF-8">
+	<title> HydroPhase | Система статистичного аналізу фазового спектру </title>
+	<link rel="icon" type="image/svg+xml" href="./assets/logo.svg" alt="HydroPhase logo">
+	<link rel="stylesheet" href="./styles/style.scss">
 </head>
-  <body>
-    <h1> HydroPhase </h1>
-    <main class="main">
 
-        <section class="parameters">
-        <div class="parameters__title"> Parameters </div>
+<body>
+	<h1> HydroPhase </h1>
+	
+	<main id="main" class="main">
+	</main>
 
-        <div class="parameters__container">
-          <div class="parameters__minititle"> FFT Window </div>
-            <div class="parameters__list">
-            <label><input type="radio" name="fftWindow" value="hamming" checked> Hamming window </label><br>
-            <label><input type="radio" name="fftWindow" value="hanning"> Hanning window </label><br>
-            <label><input type="radio" name="fftWindow" value="blackman"> Blackman </label><br>
-          </div>
-        </div>
+	<script type="module" src="main.jsx"></script>
+</body>
 
-        <div class="parameters__container">
-          <div class="parameters__minititle"> STFT </div>
-            <div class="parameters__list">
-            <label><input type="radio" name="stftWindow" value="256points" checked> 256 points </label><br>
-            <label><input type="radio" name="stftWindow" value="512points"> 512 points </label><br>
-            <label><input type="radio" name="stftWindow" value="1024points"> 1024 points </label><br>
-          </div>
-        </div>
-
-        <div class="parameters__container">
-          <div class="parameters__minititle"> Signal Normalization </div>
-            <div class="parameters__list">
-            <label><input type="radio" name="signalNormalization" value="nonormalization" checked> No normalization </label><br>
-            <label><input type="radio" name="signalNormalization" value="scale"> Scale -1...1 </label><br>
-            <label><input type="radio" name="signalNormalization" value="indecibels"> In decibels (dB) </label><br>
-          </div>
-        </div>
-        </section>
-
-        <section class="inputSignal">
-            <div class="inputSignal__title">Input Signal</div>
-            <div class="inputSignal__top">
-            <div class="audio_text">Whale_is_singing.wav</div>
-            <button id="cancel">Cancel</button>
-             <button id="upload">Choose file</button>
-             <input type="file" id="fileInput" accept=".wav" style="display: none;">
-        </div>
-        <div class="no_file">No file to analyze</div>
-        </section>
-
-
-        <section class="spectrum">
-            <div class="spectrum__title"> Spectrum </div>
-          <div class="no_file"> No file to analyze </div>
-        </section>
-
-        <section class="methodsOfAnalysis">
-            <div class="methodsOfAnalysis__title">Methods Of Analysis</div>
-            <div class="methods__buttons">
-                <button id="method" class="active">Oscillogram</button>
-                <button id="method">Amplitude</button>
-                <button id="method">Phase spectrum FFT</button>
-                <button id="method">Heatmap</button>
-                <button id="method">Phase histogram</button>
-                <button id="method">Rose-plot</button>
-                <button id="method">Coherence</button>
-            </div>
-        </section>
-
-
-        <section class="characteristicsOfSignal">
-          <div class="characteristicsOfSignal__title"> Characteristics Of Signal </div>
-
-          <div class="chars__list">
-            <label> Sampling Rate </label>
-            <div class="chars__value" id="samplingRate"> -- </div>
-
-            <label> Number of Channels </label>
-            <div class="chars__value" id="numberOfChannels"> -- </div>
-
-            <label> Bit Depth </label>
-            <div class="chars__value" id="bitDepth"> -- </div>
-
-            <label> Signal Length </label>
-            <div class="chars__value" id="signalLength"> -- </div>
-
-            <label> Number of Samples </label>
-            <div class="chars__value" id="numberOfSamples"> -- </div>
-
-            <label> File Size </label>
-            <div class="chars__value" id="fileSize"> -- </div>
-
-            <label> Maximum Amplitude </label>
-            <div class="chars__value" id="maximumAmplitude"> -- </div>
-
-            <label> Average Amplitude </label>
-            <div class="chars__value" id="averageAmplitude"> -- </div>
-            </div>
-        </section>
-
-        <section class="statistics">
-          <div class="statistics__title"> Statistics </div>
-
-          <div class="stat__list">
-            <label> Mean Phase </label>
-            <div class="stat__value" id="meanPhase"> -- </div>
-
-            <label> Phase Variance </label>
-            <div class="stat__value" id="phaseVariance"> -- </div>
-
-            <label> Coherence </label>
-            <div class="stat__value" id="coherence"> -- </div>
-
-            <label> Phase Distribution Entropy </label>
-            <div class="stat__value" id="phaseDistributionEntropy"> -- </div>
-
-            <label> Circular Mean </label>
-            <div class="stat__value" id="circularMean"> -- </div>
-
-            <label> Circular Variance </label>
-            <div class="stat__value" id="circularVariance"> -- </div>
-
-            <label> Aplitude-Weighted Average </label>
-            <div class="stat__value" id="AWA"> -- </div>
-
-            <label> Number of Phase Transitions </label>
-            <div class="stat__value" id="numberOfPhaseTransitions"> -- </div>
-            </div>
-        </section>
-
-        <section class="export">
-            <div class="export__title">Export</div>
-            <div class="export__controls">
-                <button id="download">Download</button>
-                <select id="format">
-                <option value="png">PNG</option>
-                <option value="csv">CSV</option>
-                <option value="json">JSON</option>
-                </select>
-            </div>
-        </section>
-    </main>
-  </body>
 </html>
