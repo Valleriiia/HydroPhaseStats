@@ -10,8 +10,8 @@ coverage/
 .DS_Store
 Thumbs.db
 
-data/uploads/
-data/results/
+backend/data/uploads/
+backend/data/results/
 
 .vscode/
 
