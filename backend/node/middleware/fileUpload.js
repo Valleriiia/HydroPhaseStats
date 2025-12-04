@@ -1,5 +1,6 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs'); // <--- 1. Додай імпорт fs
 
 // Налаштування сховища
 const storage = multer.diskStorage({

@@ -1,37 +1,43 @@
-function CharacteristicsBlock()
-{
-	return(
-		<section className="characteristicsOfSignal">
-			<div className="characteristicsOfSignal__title"> Characteristics Of Signal </div>
+import { useAnalysisStore } from '@src/store';
 
-			<div className="chars__list">
-				<label> Sampling Rate </label>
-				<div className="chars__value" id="samplingRate"> -- </div>
+function CharacteristicsBlock() {
+    // Дістаємо дані зі стору
+    const { data } = useAnalysisStore();
+    
+    // Якщо даних немає (null), виводимо "--". Якщо є — беремо з об'єкта characteristics
+    const chars = data?.characteristics || {};
 
-				<label> Number of Channels </label>
-				<div className="chars__value" id="numberOfChannels"> -- </div>
+    return (
+        <section className="characteristicsOfSignal">
+            <div className="characteristicsOfSignal__title"> Characteristics Of Signal </div>
 
-				<label> Bit Depth </label>
-				<div className="chars__value" id="bitDepth"> -- </div>
+            <div className="chars__list">
+                <label> Sampling Rate </label>
+                <div className="chars__value"> {chars.sampling_rate ?? '--'} </div>
 
-				<label> Signal Length </label>
-				<div className="chars__value" id="signalLength"> -- </div>
+                <label> Number of Channels </label>
+                <div className="chars__value"> {chars.num_channels ?? '--'} </div>
 
-				<label> Number of Samples </label>
-				<div className="chars__value" id="numberOfSamples"> -- </div>
+                <label> Bit Depth </label>
+                <div className="chars__value"> {chars.bit_depth ? `${chars.bit_depth} bit` : '--'} </div>
 
-				<label> File Size </label>
-				<div className="chars__value" id="fileSize"> -- </div>
+                <label> Signal Length </label>
+                <div className="chars__value"> {chars.signal_length_seconds ? `${chars.signal_length_seconds} s` : '--'} </div>
 
-				<label> Maximum Amplitude </label>
-				<div className="chars__value" id="maximumAmplitude"> -- </div>
+                <label> Number of Samples </label>
+                <div className="chars__value"> {chars.num_samples ?? '--'} </div>
 
-				<label> Average Amplitude </label>
-				<div className="chars__value" id="averageAmplitude"> -- </div>
-			</div>
-		</section>
-	);
+                <label> File Size </label>
+                <div className="chars__value"> {chars.file_size_bytes ? `${chars.file_size_bytes} bytes` : '--'} </div>
+
+                <label> Maximum Amplitude </label>
+                <div className="chars__value"> {chars.max_amplitude ?? '--'} </div>
+
+                <label> Average Amplitude </label>
+                <div className="chars__value"> {chars.avg_amplitude ?? '--'} </div>
+            </div>
+        </section>
+    );
 }
-
 
 export default CharacteristicsBlock;

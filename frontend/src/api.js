@@ -29,6 +29,8 @@ async function analyzeAudio(fileName)
 {
 	try
 	{
+		console.log('🔍 Request URL:', apiBaseUrl + '/api/analysis');
+		
 		const res = await fetch(apiBaseUrl + '/api/analysis', {
 			method: 'POST',
 			headers: {
@@ -36,12 +38,21 @@ async function analyzeAudio(fileName)
 			},
 			body: JSON.stringify({ fileName }),
 		});
-		if (!res.ok)
-		{
-			const error = await res.json();
-			throw new Error(error.error || 'Помилка аналізу файлу');
+		
+		// Спершу прочитай як текст
+		const responseText = await res.text();
+		console.log('📄 Raw response:', responseText.substring(0, 200));
+		
+		// Спробуй парсити JSON
+		try {
+			const data = JSON.parse(responseText);
+			console.log('✅ JSON parsed successfully');
+			return data;
+		} catch (parseError) {
+			console.error('❌ Failed to parse JSON. Got HTML instead.');
+			throw new Error(`Server returned HTML instead of JSON. Status: ${res.status}`);
 		}
-		return await res.json();
+		
 	}
 	catch (err)
 	{
