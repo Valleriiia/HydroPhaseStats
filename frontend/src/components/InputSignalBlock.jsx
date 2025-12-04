@@ -1,13 +1,21 @@
-import { useRef, useState } from 'react';
-import { useResultPresenceStore, useModalStore, useAnalysisStore } from '@src/store'; // Додано useAnalysisStore
+import { useRef, useState, useEffect } from 'react';
+import { useResultPresenceStore, useModalStore, useAnalysisStore, useParametersStore } from '@src/store';
 import { uploadAudio, analyzeAudio } from '@src/api';
+import Graph from './Graph';
 
 function InputSignalBlock() {
+    // 1. Отримуємо дані для графіка
+    const { data: analysisData, setAnalysisData } = useAnalysisStore();
+    const waveform = analysisData?.waveform;
+    const graphData = waveform ? { x: waveform.time, y: waveform.amplitude } : null;
+
+    // 2. Отримуємо параметри аналізу зі стору
+    const { fftWindow, stftWindow, signalNormalization } = useParametersStore();
+
     const fileInputRef = useRef(null);
     const abortControllerRef = useRef(null);
 
     const { setResultPresence } = useResultPresenceStore();
-    const { setAnalysisData } = useAnalysisStore(); // Отримуємо функцію запису
     const { open: showModal } = useModalStore();
 
     const [file, setFile] = useState(null);
@@ -38,45 +46,61 @@ function InputSignalBlock() {
 
     const handleAnalyze = async () => {
         if (!file) return;
+        
+        // Скасовуємо попередній запит, якщо він ще триває
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
         setState('analyzing');
 
         abortControllerRef.current = new AbortController();
         const signal = abortControllerRef.current.signal;
 
-        try {
-            let result; 
+        // Формуємо об'єкт опцій для передачі на бекенд
+        const analysisOptions = {
+            fftWindow,
+            stftWindow,
+            signalNormalization
+        };
 
-            // Логіка: завантажуємо, якщо ще не завантажили, потім аналізуємо
+        try {
+            let result;
+
             if (!uploadedFileName) {
                 const uploadResult = await uploadAudio(file);
                 if (signal.aborted) return;
 
                 setUploadedFileName(uploadResult.fileName);
-                // Зберігаємо результат виклику analyzeAudio
-                result = await analyzeAudio(uploadResult.fileName); 
+                // Передаємо опції
+                result = await analyzeAudio(uploadResult.fileName, analysisOptions);
             } else {
-                result = await analyzeAudio(uploadedFileName);
+                // Передаємо опції
+                result = await analyzeAudio(uploadedFileName, analysisOptions);
             }
 
             if (signal.aborted) return;
 
-            // ЗБЕРІГАЄМО ДАНІ У СТОР
             if (result && result.data) {
                 setAnalysisData(result.data);
-                setResultPresence(); // Активуємо UI
+                setResultPresence();
                 setState('file_ready');
             } else {
                 throw new Error("Сервер не повернув даних");
             }
 
         } catch (err) {
-            if (err.message !== 'Аналіз скасовано') { // Припускаємо, що API кидає таку помилку при abort
-                 if (signal.aborted) return; // Ігноруємо помилки, якщо це був ручний cancel
-                 showModal('Audio analysis error', { text: err.message || 'Unknown error' });
+            if (err.message !== 'Аналіз скасовано') {
+                // Ігноруємо помилки скасування (AbortError)
+                if (signal.aborted || err.name === 'AbortError') return;
+                showModal('Audio analysis error', { text: err.message || 'Unknown error' });
             }
             setState('file_ready');
         } finally {
-            abortControllerRef.current = null;
+            // Очищаємо контролер тільки якщо це був саме наш запит
+            if (abortControllerRef.current?.signal === signal) {
+                abortControllerRef.current = null;
+            }
         }
     };
 
@@ -86,6 +110,16 @@ function InputSignalBlock() {
         }
         setState('file_ready');
     };
+
+    // --- АВТОМАТИЧНЕ ОНОВЛЕННЯ ---
+    // Цей ефект спрацьовує при зміні будь-якого параметра.
+    // Якщо файл вже завантажено на сервер (uploadedFileName існує), ми перезапускаємо аналіз.
+    useEffect(() => {
+        if (uploadedFileName) {
+            handleAnalyze();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fftWindow, stftWindow, signalNormalization]); 
 
     return (
         <section className="inputSignal">
@@ -138,6 +172,12 @@ function InputSignalBlock() {
                     <button id="cancel" onClick={handleCancel}>
                         Cancel
                     </button>
+                </div>
+            )}
+
+            {graphData && (
+                <div style={{ marginTop: '15px' }}>
+                    <Graph data={graphData} type="line" color="#57E0E9" height={60} />
                 </div>
             )}
         </section>

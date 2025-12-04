@@ -1,14 +1,27 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-// Стор для збереження самого результату аналізу (дані)
-const useAnalysisStore = create((set) => ({
-  data: null, // Тут буде весь великий JSON з Python
-  setAnalysisData: (data) => set({ data }),
-  clearAnalysisData: () => set({ data: null }),
+const useParametersStore = create((set) => ({
+    fftWindow: 'hamming',
+    stftWindow: '256points',
+    signalNormalization: 'nonormalization',
+
+    setFftWindow: (val) => set({ fftWindow: val }),
+    setStftWindow: (val) => set({ stftWindow: val }),
+    setSignalNormalization: (val) => set({ signalNormalization: val }),
 }));
 
-// Стор для UI станів (чи є результат, коли був зроблений)
+// Стор для збереження результату аналізу та обраного методу
+const useAnalysisStore = create((set) => ({
+  data: null,
+  selectedMethod: 'oscillogram', // Метод за замовчуванням
+  
+  setAnalysisData: (data) => set({ data }),
+  clearAnalysisData: () => set({ data: null }),
+  setSelectedMethod: (method) => set({ selectedMethod: method }),
+}));
+
+// Стор для UI станів (без змін)
 const useResultPresenceStore = create(
   persist(
     (set) => ({
@@ -44,4 +57,4 @@ const useModalStore = create((set) => ({
   },
 }));
 
-export { useResultPresenceStore, useModalStore, useAnalysisStore };
+export { useResultPresenceStore, useModalStore, useAnalysisStore, useParametersStore };
