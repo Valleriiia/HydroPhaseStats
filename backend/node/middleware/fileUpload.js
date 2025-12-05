@@ -1,11 +1,20 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs'); // <--- 1. Додай імпорт fs
+const fs = require('fs'); 
 
 // Налаштування сховища
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../../data/uploads')); // зберігати в /data/uploads
+    // Визначаємо повний шлях до папки завантажень
+    const uploadPath = path.join(__dirname, '../../data/uploads');
+
+    // ПЕРЕВІРКА: Якщо папки не існує, створюємо її (разом з батьківськими, якщо треба)
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
+    // Передаємо шлях у колбек
+    cb(null, uploadPath); 
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
