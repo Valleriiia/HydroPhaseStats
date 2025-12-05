@@ -25,6 +25,7 @@ describe('pngService.exportAsZip - розширені тести', () => {
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAuMBgS01qmUAAAAASUVORK5CYII=";
   let consoleErrorSpy;
   let consoleLogSpy;
+  let consoleWarnSpy;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -32,6 +33,7 @@ describe('pngService.exportAsZip - розширені тести', () => {
     mockArchiveCallbacks = {};
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     
     // Мокаємо fs.createWriteStream
     jest.spyOn(fs, 'createWriteStream').mockImplementation(() => ({
@@ -48,6 +50,7 @@ describe('pngService.exportAsZip - розширені тести', () => {
   afterEach(() => {
     consoleErrorSpy.mockRestore();
     consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
     jest.restoreAllMocks();
   });
 
@@ -287,5 +290,243 @@ describe('pngService.exportAsZip - розширені тести', () => {
     expect(zipPath).toContain('finish_event_test.zip');
     expect(mockArchiveInstance.finalize).toHaveBeenCalled();
     expect(mockArchiveInstance.pipe).toHaveBeenCalled();
+  });
+
+  test('обробляє подію "end" на output stream', async () => {
+    const testGraphs = [{
+      name: 'graph1',
+      imageBase64: 'data:image/png;base64,' + minimalPngBase64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'end_event_test'
+    });
+
+    // Спочатку тригеримо 'end', потім 'close'
+    setImmediate(() => {
+      if (mockOutputCallbacks['end']) {
+        mockOutputCallbacks['end']();
+      }
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+      }
+    });
+
+    await promise;
+
+    // Перевіряємо що 'end' був оброблений
+    expect(consoleLogSpy).toHaveBeenCalledWith('Data has been drained');
+  });
+
+  test('обробляє подію "warning" з кодом ENOENT', async () => {
+    const testGraphs = [{
+      name: 'graph1',
+      imageBase64: 'data:image/png;base64,' + minimalPngBase64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'warning_test'
+    });
+
+    setImmediate(() => {
+      // Тригеримо warning з кодом ENOENT
+      if (mockArchiveCallbacks['warning']) {
+        const warning = new Error('File not found');
+        warning.code = 'ENOENT';
+        mockArchiveCallbacks['warning'](warning);
+      }
+      // Потім успішно завершуємо
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+      }
+    });
+
+    await promise;
+
+    // Має бути попередження в консолі
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'Archive warning:',
+      expect.objectContaining({ code: 'ENOENT' })
+    );
+  });
+
+  test('обробляє подію "warning" з іншим кодом як помилку', async () => {
+    const testGraphs = [{
+      name: 'graph1',
+      imageBase64: 'data:image/png;base64,' + minimalPngBase64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'warning_error_test'
+    });
+
+    const warningError = new Error('Critical warning');
+    warningError.code = 'CRITICAL';
+
+    setImmediate(() => {
+      if (mockArchiveCallbacks['warning']) {
+        mockArchiveCallbacks['warning'](warningError);
+      }
+    });
+
+    await expect(promise).rejects.toThrow('Critical warning');
+  });
+
+  test('не викликає resolve двічі при множинних події close', async () => {
+    const testGraphs = [{
+      name: 'graph1',
+      imageBase64: 'data:image/png;base64,' + minimalPngBase64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'double_close_test'
+    });
+
+    setImmediate(() => {
+      // Викликаємо close двічі
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+        mockOutputCallbacks['close'](); // Другий раз
+      }
+    });
+
+    const result = await promise;
+    
+    // Promise має резолвитися тільки раз
+    expect(result).toContain('double_close_test.zip');
+  });
+
+  test('не викликає reject двічі при множинних помилках', async () => {
+    const testGraphs = [{
+      name: 'graph1',
+      imageBase64: 'data:image/png;base64,' + minimalPngBase64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'double_error_test'
+    });
+
+    const error1 = new Error('First error');
+    const error2 = new Error('Second error');
+
+    setImmediate(() => {
+      if (mockOutputCallbacks['error']) {
+        mockOutputCallbacks['error'](error1);
+        mockOutputCallbacks['error'](error2); // Друга помилка ігнорується
+      }
+    });
+
+    await expect(promise).rejects.toThrow('First error');
+  });
+
+  test('пропускає графік з порожнім буфером', async () => {
+    const testGraphs = [{
+      name: 'empty_graph',
+      imageBase64: 'data:image/png;base64,' // Порожній base64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'empty_buffer_test'
+    });
+
+    setImmediate(() => {
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+      }
+    });
+
+    await promise;
+
+    // Перевіряємо що графік був пропущений
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Empty buffer')
+    );
+    
+    // append НЕ має бути викликаний для порожнього буфера
+    expect(mockArchiveInstance.append).not.toHaveBeenCalled();
+  });
+
+  test('виводить лог з кількістю доданих зображень', async () => {
+    const testGraphs = [
+      { name: 'graph1', imageBase64: 'data:image/png;base64,' + minimalPngBase64 },
+      { name: 'graph2', imageBase64: 'data:image/png;base64,' + minimalPngBase64 },
+      { name: 'graph3', imageBase64: 'data:image/png;base64,' + minimalPngBase64 }
+    ];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'multiple_images_log'
+    });
+
+    setImmediate(() => {
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+      }
+    });
+
+    await promise;
+
+    // Перевіряємо що було виведено правильну кількість
+    expect(consoleLogSpy).toHaveBeenCalledWith('Adding 3 images to ZIP');
+  });
+
+  test('виводить розмір архіву після створення', async () => {
+    const testGraphs = [{
+      name: 'graph1',
+      imageBase64: 'data:image/png;base64,' + minimalPngBase64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'archive_size_test'
+    });
+
+    setImmediate(() => {
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+      }
+    });
+
+    await promise;
+
+    // Перевіряємо що pointer() був викликаний і виведено розмір
+    expect(mockArchiveInstance.pointer).toHaveBeenCalled();
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('ZIP created: 1024 bytes')
+    );
+  });
+
+  test('створює директорію якщо вона не існує', async () => {
+    jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+    const mkdirSyncSpy = jest.spyOn(fs, 'mkdirSync').mockImplementation();
+
+    const testGraphs = [{
+      name: 'graph1',
+      imageBase64: 'data:image/png;base64,' + minimalPngBase64
+    }];
+
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'create_dir_test'
+    });
+
+    setImmediate(() => {
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+      }
+    });
+
+    await promise;
+
+    expect(mkdirSyncSpy).toHaveBeenCalledWith(
+      expect.stringContaining('results'),
+      { recursive: true }
+    );
   });
 });

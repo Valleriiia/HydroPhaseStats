@@ -117,6 +117,70 @@ describe('exportController', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Помилка експорту PDF' });
     });
+
+    test('обробляє помилку у res.download callback', async () => {
+      const mockPdfPath = '/path/to/result.pdf';
+      pdfService.createPDF.mockResolvedValue(mockPdfPath);
+
+      const req = {
+        body: {
+          graphs: [{ name: 'graph1', imageBase64: 'base64data' }],
+          statistics: { mean: 0.5 },
+          fileName: 'test'
+        }
+      };
+      
+      const downloadError = new Error('Download failed');
+      const res = {
+        download: jest.fn((path, callback) => {
+          // Симулюємо помилку при відправці
+          callback(downloadError);
+        })
+      };
+
+      // Мокаємо fs.unlink
+      const fs = require('fs');
+      const unlinkSpy = jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+        callback();
+      });
+
+      await exportController.exportToPDF(req, res);
+
+      // Перевіряємо що помилка була залогована
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error sending PDF:', downloadError);
+      
+      // Перевіряємо що файл все одно намагалися видалити
+      expect(unlinkSpy).toHaveBeenCalledWith(mockPdfPath, expect.any(Function));
+    });
+
+    test('обробляє помилку при видаленні PDF файлу', async () => {
+      const mockPdfPath = '/path/to/result.pdf';
+      pdfService.createPDF.mockResolvedValue(mockPdfPath);
+
+      const req = {
+        body: {
+          graphs: [{ name: 'graph1', imageBase64: 'base64data' }],
+          statistics: { mean: 0.5 },
+          fileName: 'test'
+        }
+      };
+
+      const res = {
+        download: jest.fn((path, callback) => {
+          callback(); // Успішна відправка
+        })
+      };
+
+      const fs = require('fs');
+      const unlinkError = new Error('Cannot delete file');
+      jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+        callback(unlinkError);
+      });
+
+      await exportController.exportToPDF(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error deleting PDF:', unlinkError);
+    });
   });
 
   describe('exportToPNG', () => {
@@ -195,6 +259,92 @@ describe('exportController', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Помилка експорту PNG ZIP' });
       // ВИПРАВЛЕНО: console.error викликається з двома аргументами
       expect(consoleErrorSpy).toHaveBeenCalledWith('PNG export error:', testError);
+    });
+
+    test('обробляє помилку у res.download callback для ZIP', async () => {
+      const mockZipPath = '/path/to/result.zip';
+      pngService.exportAsZip.mockResolvedValue(mockZipPath);
+
+      const req = {
+        body: {
+          graphs: [{ name: 'graph1', imageBase64: 'base64data' }],
+          fileName: 'test'
+        }
+      };
+
+      const downloadError = new Error('ZIP download failed');
+      const res = {
+        download: jest.fn((path, callback) => {
+          callback(downloadError);
+        })
+      };
+
+      const fs = require('fs');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      const unlinkSpy = jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+        callback();
+      });
+
+      await exportController.exportToPNG(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error sending ZIP:', downloadError);
+      expect(unlinkSpy).toHaveBeenCalled();
+    });
+
+    test('обробляє помилку при видаленні ZIP файлу', async () => {
+      const mockZipPath = '/path/to/result.zip';
+      pngService.exportAsZip.mockResolvedValue(mockZipPath);
+
+      const req = {
+        body: {
+          graphs: [{ name: 'graph1', imageBase64: 'base64data' }],
+          fileName: 'test'
+        }
+      };
+
+      const res = {
+        download: jest.fn((path, callback) => {
+          callback(); // Успішна відправка
+        })
+      };
+
+      const fs = require('fs');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      
+      const unlinkError = new Error('Cannot delete ZIP');
+      jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+        callback(unlinkError);
+      });
+
+      await exportController.exportToPNG(req, res);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error deleting ZIP:', unlinkError);
+    });
+
+    test('обробляє випадок коли ZIP файл не був створений', async () => {
+      const mockZipPath = '/path/to/nonexistent.zip';
+      pngService.exportAsZip.mockResolvedValue(mockZipPath);
+
+      const req = {
+        body: {
+          graphs: [{ name: 'graph1', imageBase64: 'base64data' }],
+          fileName: 'test'
+        }
+      };
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn()
+      };
+
+      const fs = require('fs');
+      // Файл не існує
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+      await exportController.exportToPNG(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Помилка експорту PNG ZIP' });
     });
   });
 });
