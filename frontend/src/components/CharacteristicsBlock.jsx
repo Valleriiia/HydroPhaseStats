@@ -1,10 +1,7 @@
 import { useAnalysisStore } from '@src/store';
 
 function CharacteristicsBlock() {
-    // Дістаємо дані зі стору
     const { data } = useAnalysisStore();
-    
-    // Якщо даних немає (null), виводимо "--". Якщо є — беремо з об'єкта characteristics
     const chars = data?.characteristics || {};
 
     return (

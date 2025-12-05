@@ -9,8 +9,6 @@ import Modal from "@src/components/Modal";
 
 function Main()
 {
-    // Ми групуємо блоки у <div>-обгортки (колони), щоб вони
-    // стакали один під одним природнім чином без margin-top: -XXXpx
     return(
         <>
             <div className="col-left">

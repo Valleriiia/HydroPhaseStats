@@ -3,12 +3,16 @@ const pngService = require('../services/pngService');
 
 exports.exportToPDF = async (req, res) => {
   try {
-    const { graphs, statistics, fileName } = req.body;
+    // Додали characteristics
+    const { graphs, statistics, characteristics, fileName } = req.body;
+    
     if (!graphs || !statistics) return res.status(400).json({ error: 'Немає даних' });
 
-    const pdfPath = await pdfService.createPDF({ graphs, statistics, fileName });
+    // Передаємо characteristics у сервіс
+    const pdfPath = await pdfService.createPDF({ graphs, statistics, characteristics, fileName });
     return res.download(pdfPath);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Помилка експорту PDF' });
   }
 };

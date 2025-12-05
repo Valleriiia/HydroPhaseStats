@@ -10,14 +10,14 @@ function SpectrumBlock() {
   if (data) {
     let graphData = null;
     let graphType = 'line';
-    let graphColor = '#B367FC'; // Фіолетовий для спектрів
+    let graphColor = '#B367FC'; 
 
     switch (selectedMethod) {
       case 'oscillogram':
         title = "Oscillogram";
         graphData = { x: data.waveform.time, y: data.waveform.amplitude };
         graphType = 'line';
-        graphColor = '#57E0E9'; // Бірюзовий
+        graphColor = '#57E0E9'; 
         break;
       case 'amplitude':
         title = "Amplitude Spectrum";
@@ -36,8 +36,6 @@ function SpectrumBlock() {
         break;
       case 'histogram':
         title = "Phase Histogram";
-        // Гістограма має bins (edges) і counts. Для bar chart беремо counts як Y
-        // X - просто індекси або центри бінів
         graphData = { x: data.phase_histogram.counts.map((_, i) => i), y: data.phase_histogram.counts };
         graphType = 'bar';
         break;
@@ -46,13 +44,13 @@ function SpectrumBlock() {
         graphData = { angles: data.phase_rose_plot.angles, magnitudes: data.phase_rose_plot.magnitudes };
         graphType = 'polar';
         break;
-      case 'coherence':
+      case 'coherence': { 
         title = "Coherence";
-        // Когерентність - це число або null
         const val = data.statistics.coherence;
         graphData = { text: val !== null ? `Coherence: ${val}` : 'Coherence: N/A (Mono Signal)' };
         graphType = 'text';
         break;
+      } 
       default:
         graphData = null;
     }

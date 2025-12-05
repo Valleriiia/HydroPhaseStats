@@ -22,7 +22,6 @@ h1 {
     font-weight: normal;
 }
 
-// Оновлена сітка: 3 колонки (ліва фікс - центр гнучкий - права фікс)
 .main {
     display: grid;
     grid-template-columns: 250px 1fr 250px;
@@ -34,16 +33,14 @@ h1 {
     align-items: start;
 }
 
-// Класи для колонок-обгорток (додані в Main.jsx)
 .col-left, .col-center, .col-right {
     display: flex;
     flex-direction: column;
-    gap: 14px; // Відступ між блоками по вертикалі
+    gap: 14px; 
 }
 
 /* ------------------------------------------------------------------ PARAMETERS ----------------------------------------------- */
 .parameters {
-    // grid-column прибрано - контролюється колонкою .col-left
     padding: 20px;
     font-size: $text-size-small;
     display: flex;
@@ -87,7 +84,7 @@ h1 {
         height: 10px;
         border: 1px solid $color-white;
         border-radius: 50%;
-        background-color: transparent; // виправлено none на transparent для валідності
+        background-color: transparent;
         transition: all 0.5s ease;
         cursor: pointer;
 
@@ -113,16 +110,13 @@ input {
 
 /* --------------------------------------------------------- INPUT SIGNAL ------------------------------------------------------- */
 .inputSignal {
-    // grid-column прибрано
     padding: 20px;
-    display: flex;          // Додано для коректної роботи flex-direction
+    display: flex;    
     flex-direction: column; 
     justify-content: space-between;
     background-color: $color-black-opacity;
     border-radius: 20px;
     border: 1px solid $color-white-border;
-    
-    // height замінено на min-height, щоб контент не вилазив
     min-height: 140px; 
     
     font-size: $text-size-medium;
@@ -276,19 +270,13 @@ input {
 
 /* ------------------------------------------------------- SPECTRUM -------------------------------------------------------- */
 .spectrum {
-    // grid-column прибрано
     padding: 20px;
-    // margin-top: -402px; // Прибрано від'ємний відступ!
-    
     display: flex;
     flex-direction: column;
     background-color: $color-black-opacity;
     border-radius: 20px;
     border: 1px solid $color-white-border;
-    
-    // height замінено на min-height
     min-height: 300px;
-    
     font-size: $text-size-medium;
     color: $color-white;
 
@@ -307,10 +295,7 @@ input {
 
 /* -------------------------------------------------------- METHODS OF ANALYSIS ------------------------------------------- */
 .methodsOfAnalysis {
-    // grid-column прибрано
     padding: 20px;
-    // margin-top: -60px; // Прибрано
-    
     display: flex;
     flex-direction: column;
     background-color: $color-black-opacity;
@@ -357,7 +342,6 @@ input {
 
 /* --------------------------------------------------------------- RIGHT COLUMN ------------------------------------------------ */
 .characteristicsOfSignal {
-    // grid-column прибрано
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -365,8 +349,6 @@ input {
     border-radius: 20px;
     border: 1px solid $color-white-border;
     margin-top: 0;
-    
-    // height: 250px; прибрано, щоб блок ріс разом із контентом
     height: auto; 
     
     font-size: $text-size-small;
@@ -379,10 +361,7 @@ input {
 }
 
 .statistics {
-    // grid-column прибрано
     padding: 20px;
-    // margin-top: -292px; // Прибрано
-    
     display: flex;
     flex-direction: column;
     background-color: $color-black-opacity;
@@ -398,10 +377,7 @@ input {
 }
 
 .export {
-    // grid-column прибрано
     padding: 20px;
-    // margin-top: -20px; // Прибрано
-    
     display: flex;
     flex-direction: column;
     background-color: $color-black-opacity;
@@ -443,6 +419,7 @@ input {
             border: 1px solid rgba(255, 255, 255, 0.2);
             cursor: not-allowed;
             opacity: 0.5;
+            color: rgba(255, 255, 255, 0.5); 
         }
 
         &.exporting {
@@ -456,9 +433,9 @@ input {
         padding: 8px 20px 8px 8px;
         border-radius: 8px;
         border: 1px solid $color-white-border;
-        background: $color-black-opacity url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 8px center;
+        background: $color-black-opacity url('data:image/svg+xml;utf8,%3Csvg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M7 10l5 5 5-5z"/%3E%3C/svg%3E') no-repeat right 8px center;
         background-size: 12px;
-        color: white;
+        color: $color-white; 
         font-size: 14px;
         cursor: pointer;
         outline: none;
@@ -479,13 +456,13 @@ input {
         }
 
         option {
-            background:  $color-black;
+            background: $color-black;
             color: $color-white;
             padding: 8px;
 
             &:checked {
                 background: $color-blue2;
-                color:$color-white;
+                color: $color-white;
             }
         }
 
@@ -493,11 +470,11 @@ input {
             opacity: 0.5;
             cursor: not-allowed;
             border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5); 
         }
     }
 }
 
-// Видалені старі прив'язки grid-row
 
 /* ------------------------------------------------------------------- LISTS ----------------------------------------------------- */
 .chars__list,
