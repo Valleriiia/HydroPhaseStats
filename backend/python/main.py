@@ -2,50 +2,59 @@ import sys
 import json
 import traceback
 
-# --- 1. Імпортуємо ВСЕ, що ми написали ---
+# Імпорти
 from processing.loader import get_characteristics, get_waveform
 from processing.spectra import get_spectra, get_phasegram
 from processing.stats import get_statistics, get_phase_histograms
 
 def main():
     try:
-        # --- 2. Отримуємо шлях до файлу (як і раніше) ---
         if len(sys.argv) < 2:
             raise ValueError("Помилка: Не вказано шлях до аудіофайлу.")
         
         file_path = sys.argv[1]
+        
+        # Парсимо налаштування (якщо є)
+        options = {}
+        if len(sys.argv) > 2:
+            try:
+                options = json.loads(sys.argv[2])
+            except:
+                pass # Якщо JSON битий, використовуємо дефолтні
+        
+        # --- Викликаємо функції з передачею параметрів ---
+        
+        # Loader (Waveform + Normalization)
+        norm_type = options.get('signalNormalization', 'nonormalization')
+        characteristics_data = get_characteristics(file_path) 
+        waveform_data = get_waveform(file_path, normalization=norm_type)
+        
+        # Spectra (FFT Window + STFT params)
+        fft_window = options.get('fftWindow', 'hamming')
+        
+        stft_option = options.get('stftWindow', '256points')
+        nperseg = 256
+        if stft_option == '512points': nperseg = 512
+        elif stft_option == '1024points': nperseg = 1024
+        
+        spectra_data = get_spectra(file_path, window_type=fft_window)
+        phasegram_data = get_phasegram(file_path, window_type=fft_window, nperseg=nperseg)
+        
+        # Stats
+        stats_data = get_statistics(file_path)
+        histograms_data = get_phase_histograms(file_path)
 
-        # --- 3. Викликаємо всі наші протестовані функції ---
-        # Кожна функція читає файл і повертає свою частину JSON
-        
-        # Функції з loader.py
-        characteristics_data = get_characteristics(file_path) # Повертає {"sampling_rate":...}
-        waveform_data = get_waveform(file_path)             # Повертає {"time":...}
-        
-        # Функції з spectra.py
-        spectra_data = get_spectra(file_path)           # Повертає {"amplitude_spectrum":...}
-        phasegram_data = get_phasegram(file_path)         # Повертає {"phasegram":...}
-        
-        # Функції з stats.py
-        stats_data = get_statistics(file_path)            # Повертає {"statistics":...}
-        histograms_data = get_phase_histograms(file_path) # Повертає {"phase_histogram":...}
-
-
-        # --- 4. Збираємо фінальний JSON-контракт ---
-        
+        # Збираємо результат
         final_result = {
-            # Вкладаємо дані з loader.py
             "characteristics": characteristics_data,
             "waveform": waveform_data,
-            **spectra_data,    # Додає 'amplitude_spectrum' та 'phase_spectrum'
-            **phasegram_data,  # Додає 'phasegram'
-            **stats_data,      # Додає 'statistics'
-            **histograms_data  # Додає 'phase_histogram' та 'phase_rose_plot'
+            **spectra_data,
+            **phasegram_data,
+            **stats_data,
+            **histograms_data
         }
         
-        # --- 5. Повертаємо ---
         print(json.dumps(final_result, ensure_ascii=False, separators=(',', ':')))
-        
         sys.exit(0) 
 
     except Exception as e:

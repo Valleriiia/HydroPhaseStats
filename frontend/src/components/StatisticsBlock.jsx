@@ -1,37 +1,42 @@
-function StatisticsBlock()
-{
-	return(
-		<section className="statistics">
-			<div className="statistics__title"> Statistics </div>
+import { useAnalysisStore } from '@src/store';
 
-			<div className="stat__list">
-				<label> Mean Phase </label>
-				<div className="stat__value" id="meanPhase"> -- </div>
+function StatisticsBlock() {
+    const { data } = useAnalysisStore();
+    const stats = data?.statistics || {};
 
-				<label> Phase Variance </label>
-				<div className="stat__value" id="phaseVariance"> -- </div>
+    return (
+        <section className="statistics">
+            <div className="statistics__title"> Statistics </div>
 
-				<label> Coherence </label>
-				<div className="stat__value" id="coherence"> -- </div>
+            <div className="stat__list">
+                <label> Mean Phase </label>
+                <div className="stat__value"> {stats.mean_phase ?? '--'} </div>
 
-				<label> Phase Distribution Entropy </label>
-				<div className="stat__value" id="phaseDistributionEntropy"> -- </div>
+                <label> Phase Variance </label>
+                <div className="stat__value"> {stats.phase_variance ?? '--'} </div>
 
-				<label> Circular Mean </label>
-				<div className="stat__value" id="circularMean"> -- </div>
+                <label> Coherence </label>
+                <div className="stat__value"> 
+                    {stats.coherence === null ? 'N/A' : (stats.coherence ?? '--')} 
+                </div>
 
-				<label> Circular Variance </label>
-				<div className="stat__value" id="circularVariance"> -- </div>
+                <label> Phase Distribution Entropy </label>
+                <div className="stat__value"> {stats.phase_entropy ?? '--'} </div>
 
-				<label> Aplitude-Weighted Average </label>
-				<div className="stat__value" id="AWA"> -- </div>
+                <label> Circular Mean </label>
+                <div className="stat__value"> {stats.circular_mean ?? '--'} </div>
 
-				<label> Number of Phase Transitions </label>
-				<div className="stat__value" id="numberOfPhaseTransitions"> -- </div>
-			</div>
-		</section>
-	);
+                <label> Circular Variance </label>
+                <div className="stat__value"> {stats.circular_variance ?? '--'} </div>
+
+                <label> Amplitude-Weighted Average </label>
+                <div className="stat__value"> {stats.amplitude_weighted_average ?? '--'} </div>
+
+                <label> Number of Phase Transitions </label>
+                <div className="stat__value"> {stats.phase_transition_count ?? '--'} </div>
+            </div>
+        </section>
+    );
 }
-
 
 export default StatisticsBlock;

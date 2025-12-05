@@ -7,25 +7,29 @@ import ExportBlock from "@src/components/ExportBlock";
 import StatisticsBlock from "@src/components/StatisticsBlock";
 import Modal from "@src/components/Modal";
 
-
 function Main()
 {
-	return(
-		<>
-			<ParametersBlock/>
+    return(
+        <>
+            <div className="col-left">
+                <ParametersBlock/>
+            </div>
 
-			<InputSignalBlock/>
-			<SpectrumBlock/>
-			<AnalysisMethodsBlock/>
+            <div className="col-center">
+                <InputSignalBlock/>
+                <SpectrumBlock/>
+                <AnalysisMethodsBlock/>
+            </div>
 
-			<CharacteristicsBlock/>
-			<StatisticsBlock/>
-			<ExportBlock/>
+            <div className="col-right">
+                <CharacteristicsBlock/>
+                <StatisticsBlock/>
+                <ExportBlock/>
+            </div>
 
-			<Modal/>
-		</>
-	);
+            <Modal/>
+        </>
+    );
 }
-
 
 export default Main;
