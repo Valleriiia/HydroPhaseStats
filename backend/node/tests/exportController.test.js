@@ -66,8 +66,17 @@ describe('exportController', () => {
         }
       };
       const res = {
-        download: jest.fn()
+        download: jest.fn((path, callback) => {
+          // Симулюємо успішне завантаження
+          if (callback) callback();
+        })
       };
+
+      // Мокаємо fs.unlink
+      const fs = require('fs');
+      jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+        if (callback) callback();
+      });
 
       await exportController.exportToPDF(req, res);
 
@@ -76,7 +85,9 @@ describe('exportController', () => {
         statistics: req.body.statistics,
         fileName: req.body.fileName
       });
-      expect(res.download).toHaveBeenCalledWith(mockPdfPath);
+      expect(res.download).toHaveBeenCalled();
+      // Перевіряємо що download викликано з правильним шляхом (перший аргумент)
+      expect(res.download.mock.calls[0][0]).toBe(mockPdfPath);
     });
 
     test('обробляє помилку від pdfService', async () => {
@@ -135,8 +146,17 @@ describe('exportController', () => {
         }
       };
       const res = {
-        download: jest.fn()
+        download: jest.fn((path, callback) => {
+          if (callback) callback();
+        })
       };
+
+      // Мокаємо fs
+      const fs = require('fs');
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'unlink').mockImplementation((path, callback) => {
+        if (callback) callback();
+      });
 
       await exportController.exportToPNG(req, res);
 
@@ -144,7 +164,8 @@ describe('exportController', () => {
         graphs: req.body.graphs,
         fileName: req.body.fileName
       });
-      expect(res.download).toHaveBeenCalledWith(mockZipPath);
+      expect(res.download).toHaveBeenCalled();
+      expect(res.download.mock.calls[0][0]).toBe(mockZipPath);
     });
 
     test('обробляє помилку від pngService', async () => {
@@ -166,7 +187,8 @@ describe('exportController', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Помилка експорту PNG ZIP' });
-      expect(consoleErrorSpy).toHaveBeenCalledWith(testError);
+      // ВИПРАВЛЕНО: console.error викликається з двома аргументами
+      expect(consoleErrorSpy).toHaveBeenCalledWith('PNG export error:', testError);
     });
   });
 });

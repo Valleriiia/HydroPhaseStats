@@ -5,7 +5,7 @@ exports.runAnalysis = (fileName) => {
   return new Promise((resolve, reject) => {
     const pythonPath = 'python'; // або 'python3', залежно від середовища
     const scriptPath = path.join(__dirname, '../../python/main.py');
-    const filePath = path.join(__dirname, '../../data/uploads', fileName);
+    const filePath = path.join(__dirname, '../../../data/uploads', fileName);
 
     const process = spawn(pythonPath, [scriptPath, filePath]);
 

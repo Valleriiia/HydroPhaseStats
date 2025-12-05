@@ -3,6 +3,7 @@ jest.mock('pdfkit', () => {
   const mockImage = jest.fn().mockReturnThis();
   const mockAddPage = jest.fn().mockReturnThis();
   const mockMoveDown = jest.fn().mockReturnThis();
+  const mockFont = jest.fn().mockReturnThis(); // ДОДАНО
 
   const mockInstance = {
     pipe: jest.fn(),
@@ -11,6 +12,7 @@ jest.mock('pdfkit', () => {
     addPage: mockAddPage,
     image: mockImage,
     moveDown: mockMoveDown,
+    font: mockFont, // ДОДАНО
     end: jest.fn()
   };
 
@@ -35,8 +37,15 @@ const pdfService = require('../services/pdfService');
 const PDFDocument = require('pdfkit');
 
 describe('pdfService.createPDF - розширені тести', () => {
+  let consoleWarnSpy;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+  });
+
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
   });
 
   test('обробляє порожні графіки', async () => {
@@ -58,7 +67,7 @@ describe('pdfService.createPDF - розширені тести', () => {
 
   test('пропускає графіки без imageBase64', async () => {
     const mockGraphs = [
-      { name: 'Chart1' }, // немає imageBase64
+      { name: 'Chart1' },
       { name: 'Chart2', imageBase64: null }
     ];
     const mockStats = { CircularMean: 0.5 };
@@ -91,9 +100,7 @@ describe('pdfService.createPDF - розширені тести', () => {
 
     const instance = PDFDocument.__mockInstance;
 
-    // Перевіряємо що addPage викликано (код спробував додати сторінку)
     expect(instance.addPage).toHaveBeenCalled();
-    // Перевіряємо що text викликано з назвою графіка
     const textCalls = instance.text.mock.calls.map(call => call[0]);
     const hasGraphTitle = textCalls.some(text => 
       typeof text === 'string' && text.includes('BadChart')

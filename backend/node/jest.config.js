@@ -23,5 +23,9 @@ module.exports = {
   testMatch: [
     "**/tests/**/*.test.js"
   ],
-  testTimeout: 10000
+  testTimeout: 10000,
+  transform: {},
+  transformIgnorePatterns: [
+    "node_modules/"
+  ]
 };

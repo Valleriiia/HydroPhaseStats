@@ -6,10 +6,18 @@ exports.createPDF = async ({ graphs = [], statistics = {}, fileName = 'result' }
   const outputDir = path.join(__dirname, '../../../data/results');
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
+  const fontPath = path.join(__dirname, '../../../fonts/Roboto-Regular.ttf');
+
   const pdfPath = path.join(outputDir, `${fileName}.pdf`);
   const doc = new PDFDocument({ margin: 40 });
   const stream = fs.createWriteStream(pdfPath);
   doc.pipe(stream);
+
+  if (fs.existsSync(fontPath)) {
+      doc.font(fontPath); 
+  } else {
+      console.warn('Шрифт не знайдено, використовується стандартний (кирилиця не відображатиметься)!');
+  }
 
   // Заголовок
   doc.fontSize(18).text(`Результати аналізу файлу: ${fileName}`, { align: 'center' });
