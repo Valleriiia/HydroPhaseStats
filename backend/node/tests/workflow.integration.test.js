@@ -1,6 +1,7 @@
 const request = require('supertest');
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 // Мокаємо всі сервіси
 jest.mock('../services/pythonService');
@@ -26,10 +27,30 @@ const pngService = require('../services/pngService');
 describe('Complete Workflow Integration Tests', () => {
   let app;
   let consoleErrorSpy;
+  // Створюємо шляхи до тимчасових файлів
+  const tempPdfPath = path.join(__dirname, 'temp_test.pdf');
+  const tempZipPath = path.join(__dirname, 'temp_test.zip');
+
+  beforeAll(() => {
+    // Створюємо фізичні файли, щоб res.download міг їх відправити
+    fs.writeFileSync(tempPdfPath, 'Dummy PDF Content');
+    fs.writeFileSync(tempZipPath, 'Dummy ZIP Content');
+  });
+
+  afterAll(() => {
+    // Прибираємо за собою
+    if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath);
+    if (fs.existsSync(tempZipPath)) fs.unlinkSync(tempZipPath);
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    // Мокаємо fs.unlink, щоб контролер не видалив наші тестові файли під час тесту
+    jest.spyOn(fs, 'unlink').mockImplementation((path, cb) => {
+      if (cb) cb();
+    });
 
     // Очищаємо кеш модулів для чистого імпорту
     delete require.cache[require.resolve('../routes/upload')];
@@ -51,6 +72,7 @@ describe('Complete Workflow Integration Tests', () => {
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    jest.restoreAllMocks(); // Відновлюємо fs.unlink
   });
 
   describe('Повний цикл: Upload -> Analyze -> Export', () => {
@@ -86,11 +108,8 @@ describe('Complete Workflow Integration Tests', () => {
       expect(analysisResponse.body.data).toEqual(mockAnalysisResult);
 
       // 3. Експорт результатів в PDF
-      const mockPdfPath = '/path/to/result.pdf';
-      pdfService.createPDF.mockImplementation((data) => {
-        // Повертаємо Promise з шляхом до файлу
-        return Promise.resolve(mockPdfPath);
-      });
+      // Важливо: повертаємо шлях до реального файлу
+      pdfService.createPDF.mockResolvedValue(tempPdfPath);
 
       const exportRequest = request(app)
         .post('/api/export/pdf')
@@ -102,13 +121,9 @@ describe('Complete Workflow Integration Tests', () => {
             duration: mockAnalysisResult.duration
           },
           fileName: 'test-results'
-        });
-
-      // Мокуємо res.download для обробки файлу
-      exportRequest.expect((res) => {
-        // Перевіряємо що сервіс був викликаний
-        expect(pdfService.createPDF).toHaveBeenCalled();
-      });
+        })
+        .expect(200) // Тепер має повернути 200, бо файл існує
+        .expect('Content-Type', /pdf/); // Перевіряємо тип контенту
 
       await exportRequest;
 
@@ -146,37 +161,30 @@ describe('Complete Workflow Integration Tests', () => {
         .expect(200);
 
       // 3. Експорт в PNG
-      const mockZipPath = '/path/to/graphs.zip';
-      pngService.exportAsZip.mockImplementation((data) => {
-        return Promise.resolve(mockZipPath);
-      });
+      // Важливо: повертаємо шлях до реального файлу
+      pngService.exportAsZip.mockResolvedValue(tempZipPath);
 
-      const exportRequest = request(app)
+      await request(app)
         .post('/api/export/png')
         .send({
           graphs: mockAnalysisResult.graphs,
           fileName: 'test-graphs'
-        });
+        })
+        .expect(200); // Очікуємо успішне скачування
 
-      exportRequest.expect(() => {
-        expect(pngService.exportAsZip).toHaveBeenCalledWith({
-          graphs: mockAnalysisResult.graphs,
-          fileName: 'test-graphs'
-        });
+      expect(pngService.exportAsZip).toHaveBeenCalledWith({
+        graphs: mockAnalysisResult.graphs,
+        fileName: 'test-graphs'
       });
-
-      await exportRequest;
     });
   });
 
   describe('Error Scenarios в Workflow', () => {
     test('помилка при аналізі після успішного завантаження', async () => {
-      // 1. Успішне завантаження
       const uploadResponse = await request(app)
         .post('/api/upload')
         .expect(200);
 
-      // 2. Помилка при аналізі
       pythonService.runAnalysis.mockRejectedValue(new Error('Python error'));
 
       await request(app)
@@ -186,12 +194,10 @@ describe('Complete Workflow Integration Tests', () => {
     });
 
     test('помилка при експорті після успішного аналізу', async () => {
-      // 1. Завантаження
       await request(app)
         .post('/api/upload')
         .expect(200);
 
-      // 2. Успішний аналіз
       const mockAnalysisResult = {
         graphs: [{ name: 'Graph1', imageBase64: 'data:image/png;base64,abc' }],
         statistics: { mean: 0.5 }
@@ -204,7 +210,6 @@ describe('Complete Workflow Integration Tests', () => {
         .send({ fileName: 'test.wav' })
         .expect(200);
 
-      // 3. Помилка при експорті
       pdfService.createPDF.mockRejectedValue(new Error('PDF error'));
 
       await request(app)
@@ -246,24 +251,13 @@ describe('Complete Workflow Integration Tests', () => {
       const files = ['file1.wav', 'file2.wav', 'file3.wav'];
 
       for (const file of files) {
-        // Завантаження
-        const uploadResponse = await request(app)
-          .post('/api/upload')
-          .expect(200);
-
-        // Аналіз
-        pythonService.runAnalysis.mockResolvedValue({
-          mean: Math.random(),
-          variance: Math.random()
-        });
-
+        await request(app).post('/api/upload').expect(200);
+        pythonService.runAnalysis.mockResolvedValue({ mean: 0.5 });
         await request(app)
           .post('/api/analysis')
-          .send({ fileName: uploadResponse.body.fileName })
+          .send({ fileName: 'test.wav' })
           .expect(200);
       }
-
-      // Перевіряємо що всі файли були проаналізовані
       expect(pythonService.runAnalysis).toHaveBeenCalledTimes(files.length);
     });
 
@@ -273,10 +267,10 @@ describe('Complete Workflow Integration Tests', () => {
         statistics: { mean: 0.5 }
       };
 
-      pdfService.createPDF.mockResolvedValue('/path/to/pdf');
-      pngService.exportAsZip.mockResolvedValue('/path/to/zip');
+      // Повертаємо реальні шляхи
+      pdfService.createPDF.mockResolvedValue(tempPdfPath);
+      pngService.exportAsZip.mockResolvedValue(tempZipPath);
 
-      // Просто перевіряємо що обидва endpoint доступні
       const results = await Promise.all([
         request(app)
           .post('/api/export/pdf')
@@ -286,8 +280,8 @@ describe('Complete Workflow Integration Tests', () => {
           .send({ graphs: mockData.graphs, fileName: 'test' })
       ]);
 
-      // Перевіряємо що обидва виклики були успішними або хоча б оброблені
-      expect(results).toHaveLength(2);
+      expect(results[0].status).toBe(200);
+      expect(results[1].status).toBe(200);
       expect(pdfService.createPDF).toHaveBeenCalled();
       expect(pngService.exportAsZip).toHaveBeenCalled();
     });

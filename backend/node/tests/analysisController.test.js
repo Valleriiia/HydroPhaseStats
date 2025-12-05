@@ -1,8 +1,10 @@
+// Мокаємо pythonService ДО імпорту контролера
+jest.mock('../services/pythonService', () => ({
+  runAnalysis: jest.fn()
+}));
+
 const analysisController = require('../controllers/analysisController');
 const pythonService = require('../services/pythonService');
-
-// Мокаємо pythonService
-jest.mock('../services/pythonService');
 
 describe('analysisController.analyzeSignal', () => {
   let consoleErrorSpy;

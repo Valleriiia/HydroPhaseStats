@@ -1,5 +1,6 @@
 let mockArchiveInstance;
-let mockArchiveError = null;
+let mockOutputCallbacks = {};
+let mockArchiveCallbacks = {};
 
 jest.mock('archiver', () => {
   return jest.fn(() => {
@@ -8,13 +9,9 @@ jest.mock('archiver', () => {
       append: jest.fn(),
       finalize: jest.fn(),
       on: jest.fn((event, callback) => {
-        if (event === 'close' && !mockArchiveError) {
-          callback();
-        }
-        if (event === 'error' && mockArchiveError) {
-          callback(mockArchiveError);
-        }
-      })
+        mockArchiveCallbacks[event] = callback;
+      }),
+      pointer: jest.fn(() => 1024)
     };
     return mockArchiveInstance;
   });
@@ -27,16 +24,56 @@ describe('pngService.exportAsZip - розширені тести', () => {
   const minimalPngBase64 = 
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAuMBgS01qmUAAAAASUVORK5CYII=";
   let consoleErrorSpy;
+  let consoleLogSpy;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockArchiveError = null;
+    mockOutputCallbacks = {};
+    mockArchiveCallbacks = {};
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+    
+    // Мокаємо fs.createWriteStream
+    jest.spyOn(fs, 'createWriteStream').mockImplementation(() => ({
+      on: jest.fn((event, callback) => {
+        mockOutputCallbacks[event] = callback;
+        return this;
+      })
+    }));
+    
+    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    jest.spyOn(fs, 'mkdirSync').mockImplementation();
   });
 
-    afterEach(() => {
-      consoleErrorSpy.mockRestore();
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    consoleLogSpy.mockRestore();
+    jest.restoreAllMocks();
+  });
+
+  const triggerSuccess = () => {
+    setImmediate(() => {
+      if (mockOutputCallbacks['close']) {
+        mockOutputCallbacks['close']();
+      }
     });
+  };
+
+  const triggerError = (error) => {
+    setImmediate(() => {
+      if (mockOutputCallbacks['error']) {
+        mockOutputCallbacks['error'](error);
+      }
+    });
+  };
+
+  const triggerArchiveError = (error) => {
+    setImmediate(() => {
+      if (mockArchiveCallbacks['error']) {
+        mockArchiveCallbacks['error'](error);
+      }
+    });
+  };
 
   test('створює ZIP з кількома графіками', async () => {
     const testGraphs = [
@@ -56,10 +93,13 @@ describe('pngService.exportAsZip - розширені тести', () => {
 
     const fileName = 'multiple_graphs';
 
-    const zipPath = await pngService.exportAsZip({
+    const promise = pngService.exportAsZip({
       graphs: testGraphs,
       fileName
     });
+
+    triggerSuccess();
+    const zipPath = await promise;
 
     expect(zipPath.endsWith('.zip')).toBe(true);
     expect(mockArchiveInstance.append).toHaveBeenCalledTimes(3);
@@ -84,10 +124,13 @@ describe('pngService.exportAsZip - розширені тести', () => {
 
     const fileName = 'partial_graphs';
 
-    await pngService.exportAsZip({
+    const promise = pngService.exportAsZip({
       graphs: testGraphs,
       fileName
     });
+
+    triggerSuccess();
+    await promise;
 
     // Тільки перший графік має бути доданий
     expect(mockArchiveInstance.append).toHaveBeenCalledTimes(1);
@@ -97,10 +140,13 @@ describe('pngService.exportAsZip - розширені тести', () => {
     const testGraphs = [];
     const fileName = 'empty_graphs';
 
-    const zipPath = await pngService.exportAsZip({
+    const promise = pngService.exportAsZip({
       graphs: testGraphs,
       fileName
     });
+
+    triggerSuccess();
+    const zipPath = await promise;
 
     expect(zipPath.endsWith('.zip')).toBe(true);
     expect(mockArchiveInstance.append).not.toHaveBeenCalled();
@@ -115,10 +161,13 @@ describe('pngService.exportAsZip - розширені тести', () => {
       }
     ];
 
-    const zipPath = await pngService.exportAsZip({
+    const promise = pngService.exportAsZip({
       graphs: testGraphs
       // fileName не передано
     });
+
+    triggerSuccess();
+    const zipPath = await promise;
 
     expect(zipPath).toContain('graphs.zip');
   });
@@ -137,10 +186,13 @@ describe('pngService.exportAsZip - розширені тести', () => {
 
     const fileName = 'test';
 
-    await pngService.exportAsZip({
+    const promise = pngService.exportAsZip({
       graphs: testGraphs,
       fileName
     });
+
+    triggerSuccess();
+    await promise;
 
     expect(mockArchiveInstance.append).toHaveBeenCalledWith(
       expect.any(Buffer),
@@ -162,10 +214,13 @@ describe('pngService.exportAsZip - розширені тести', () => {
 
     const fileName = 'unnamed';
 
-    await pngService.exportAsZip({
+    const promise = pngService.exportAsZip({
       graphs: testGraphs,
       fileName
     });
+
+    triggerSuccess();
+    await promise;
 
     expect(mockArchiveInstance.append).toHaveBeenCalledWith(
       expect.any(Buffer),
@@ -174,8 +229,7 @@ describe('pngService.exportAsZip - розширені тести', () => {
   });
 
   test('обробляє помилку архівування', async () => {
-    mockArchiveError = new Error('Archiving failed');
-
+    const testError = new Error('Archiving failed');
     const testGraphs = [
       {
         name: 'graph1',
@@ -185,25 +239,18 @@ describe('pngService.exportAsZip - розширені тести', () => {
 
     const fileName = 'error_test';
 
-    await expect(
-      pngService.exportAsZip({
-        graphs: testGraphs,
-        fileName
-      })
-    ).rejects.toThrow('Archiving failed');
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName
+    });
+
+    triggerArchiveError(testError);
+
+    await expect(promise).rejects.toThrow('Archiving failed');
   });
 
   test('обробляє помилку запису файлу', async () => {
-    const mockOutput = {
-      on: jest.fn((event, callback) => {
-        if (event === 'error') {
-          callback(new Error('Write error'));
-        }
-      })
-    };
-
-    jest.spyOn(fs, 'createWriteStream').mockReturnValueOnce(mockOutput);
-
+    const testError = new Error('Write error');
     const testGraphs = [
       {
         name: 'graph1',
@@ -211,16 +258,17 @@ describe('pngService.exportAsZip - розширені тести', () => {
       }
     ];
 
-    await expect(
-      pngService.exportAsZip({
-        graphs: testGraphs,
-        fileName: 'write_error_test'
-      })
-    ).rejects.toThrow('Write error');
+    const promise = pngService.exportAsZip({
+      graphs: testGraphs,
+      fileName: 'write_error_test'
+    });
+
+    triggerError(testError);
+
+    await expect(promise).rejects.toThrow('Write error');
   });
 
-  test('успішно завершується при події finish на output stream', async () => {
-    // Тестуємо що promise резолвиться при події 'finish'
+  test('успішно завершується при події close на output stream', async () => {
     const testGraphs = [
       {
         name: 'graph1',
@@ -228,10 +276,13 @@ describe('pngService.exportAsZip - розширені тести', () => {
       }
     ];
 
-    const zipPath = await pngService.exportAsZip({
+    const promise = pngService.exportAsZip({
       graphs: testGraphs,
       fileName: 'finish_event_test'
     });
+
+    triggerSuccess();
+    const zipPath = await promise;
 
     expect(zipPath).toContain('finish_event_test.zip');
     expect(mockArchiveInstance.finalize).toHaveBeenCalled();

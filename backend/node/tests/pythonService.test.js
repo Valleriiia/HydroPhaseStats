@@ -1,8 +1,12 @@
-const pythonService = require('../services/pythonService');
-const { spawn } = require('child_process');
 const { EventEmitter } = require('events');
 
-jest.mock('child_process');
+// Мокаємо child_process ДО імпорту сервісу
+jest.mock('child_process', () => ({
+  spawn: jest.fn()
+}));
+
+const pythonService = require('../services/pythonService');
+const { spawn } = require('child_process');
 
 describe('pythonService.runAnalysis', () => {
   let mockProcess;
@@ -11,6 +15,8 @@ describe('pythonService.runAnalysis', () => {
     mockProcess = new EventEmitter();
     mockProcess.stdout = new EventEmitter();
     mockProcess.stderr = new EventEmitter();
+    
+    // Правильно мокаємо spawn
     spawn.mockReturnValue(mockProcess);
   });
 

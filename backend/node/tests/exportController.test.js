@@ -1,9 +1,15 @@
+// Мокаємо сервіси ДО імпорту контролера
+jest.mock('../services/pdfService', () => ({
+  createPDF: jest.fn()
+}));
+
+jest.mock('../services/pngService', () => ({
+  exportAsZip: jest.fn()
+}));
+
 const exportController = require('../controllers/exportController');
 const pdfService = require('../services/pdfService');
 const pngService = require('../services/pngService');
-
-jest.mock('../services/pdfService');
-jest.mock('../services/pngService');
 
 describe('exportController', () => {
   let consoleErrorSpy;
