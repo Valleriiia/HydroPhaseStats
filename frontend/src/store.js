@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 
 const useParametersStore = create((set) => ({
     fftWindow: 'hamming',
@@ -10,33 +9,21 @@ const useParametersStore = create((set) => ({
     setSignalNormalization: (val) => set({ signalNormalization: val }),
 }));
 
-const useAnalysisStore = create((set) => ({
-    data: null,
-    selectedMethod: 'oscillogram',
-    originalFileName: 'analysis', 
-    
-    setAnalysisData: (data, fileName) => set({ 
-        data, 
-        originalFileName: fileName || 'analysis' 
-    }),
-    
-    clearAnalysisData: () => set({ data: null, originalFileName: 'analysis' }),
-    setSelectedMethod: (method) => set({ selectedMethod: method }),
-}));
+const useAnalysisStore = create(
+    (set) => ({
+        data: null,
+        hasResult: false,
+        selectedMethod: 'oscillogram',
+        originalFileName: 'analysis',
 
-const useResultPresenceStore = create(
-    persist(
-        (set) => ({
-            hasResult: false,
-            timestamp: null,
-            setResultPresence: () => {
-                const now = Date.now();
-                set({ hasResult: true, timestamp: now });
-            },
-            clearResultPresence: () => set({ hasResult: false, timestamp: null }),
-        }),
-        { name: 'result-presence', storage: createJSONStorage(() => localStorage) }
-    )
+        setAnalysisData: (data, fileName) => {
+            set({ data, originalFileName: fileName || 'analysis', hasResult: !!data });
+        },
+
+        clearAnalysisData: () => set({ data: null, originalFileName: 'analysis', hasResult: false }),
+
+        setSelectedMethod: (method) => set({ selectedMethod: method }),
+    })
 );
 
 const useModalStore = create((set) => ({
@@ -45,4 +32,4 @@ const useModalStore = create((set) => ({
     close: () => set({ current: null }),
 }));
 
-export { useResultPresenceStore, useModalStore, useAnalysisStore, useParametersStore };
+export { useParametersStore, useAnalysisStore, useModalStore };

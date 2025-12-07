@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { useResultPresenceStore, useModalStore, useAnalysisStore, useParametersStore } from '@src/store';
+import { useParametersStore, useAnalysisStore, useModalStore } from '@src/store';
 import { uploadAudio, analyzeAudio } from '@src/api';
 import Graph from './Graph';
 
@@ -18,7 +18,6 @@ function InputSignalBlock() {
     const fileInputRef = useRef(null);
     const abortControllerRef = useRef(null);
 
-    const { setResultPresence, clearResultPresence } = useResultPresenceStore();
     const { open: showModal } = useModalStore();
 
     const [file, setFile] = useState(null);
@@ -47,7 +46,6 @@ function InputSignalBlock() {
         }
 
         clearAnalysisData();  
-        clearResultPresence(); 
     };
 
     const handleAnalyze = async () => {
@@ -85,9 +83,8 @@ function InputSignalBlock() {
 
             if (result && result.data) {
                 const fileNameToSave = file ? file.name : 'audio_file';
+
                 setAnalysisData(result.data, fileNameToSave);
-                
-                setResultPresence();
                 setState('file_ready');
             } else {
                 throw new Error("Сервер не повернув даних");

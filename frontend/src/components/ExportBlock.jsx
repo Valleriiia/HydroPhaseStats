@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { useResultPresenceStore, useModalStore, useAnalysisStore } from '@src/store';
+import { useAnalysisStore, useModalStore } from '@src/store';
 import { exportPDF, exportPNG } from '@src/api';
 import { drawLineChart, drawBarChart, drawPolarChart, drawHeatmap, drawText } from '../utils/graphUtils';
 
 function ExportBlock() {
-  const { hasResult } = useResultPresenceStore();
-
-  const { data, originalFileName } = useAnalysisStore(); 
+  const { hasResult, data, originalFileName } = useAnalysisStore(); 
   const { open: showModal } = useModalStore();
   
   const [isExporting, setIsExporting] = useState(false);
