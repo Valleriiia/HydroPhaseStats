@@ -136,22 +136,6 @@ input {
         margin-top: -20px;
     }
 
-    .audio_text {
-        font-size: $text-size-small;
-        margin-right: -100px;
-        visibility: hidden; 
-    }
-
-    #cancel {
-        background-color: $color-blue2;
-        border-radius: 36px;
-        border: none;
-        color: $color-white;
-        padding: 10px 30px;
-        max-width: 112px;
-        visibility: hidden;
-    }
-
     #upload {
         background-color: $color-blue1;
         border-radius: 36px;
@@ -199,13 +183,17 @@ input {
 
     .analyzing_text {
         font-size: $text-size-medium;
+        width: 100%;
+        text-align: right;
+        margin-right: 50px;
     }
 
     .audio_text {
-        font-size: $text-size-small;
-        margin-right: auto;
+        font-size: $text-size-medium;
+        width: 100%;
+        text-align: right;
+        margin-right: 50px;
         visibility: visible;
-        max-width: 400px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
